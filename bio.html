@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>生物会考 · 口袋手卡</title>
+<style>
+  :root {
+    --bg: #f8f7f4; --card: #fff; --text: #2c2c2a; --muted: #888780;
+    --border: #d3d1c7;
+    --red: #e24b4a; --blue: #378add; --green: #639922; --amber: #ef9f27; --teal: #1d9e75; --purple: #7f77dd; --rose: #d4537e;
+    --red-l: #fcebeb; --blue-l: #e6f1fb; --green-l: #eaf3de; --amber-l: #faeeda; --teal-l: #e1f5ee; --purple-l: #eeedfe; --rose-l: #fbeaf0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6;
+    min-height: 100vh; -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  .header { padding: 14px 16px 6px; text-align: center; }
+  .header h1 { font-size: 18px; font-weight: 500; }
+  .header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .tabs {
+    display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none; justify-content: center; flex-wrap: wrap;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0; padding: 6px 12px; border-radius: 20px;
+    border: 0.5px solid var(--border); background: var(--card);
+    font-size: 12px; font-weight: 400; color: var(--muted); cursor: pointer;
+    white-space: nowrap; transition: all 0.15s; position: relative;
+  }
+  .tab.active { background: var(--text); color: #fff; border-color: var(--text); font-weight: 500; }
+  .tab .badge {
+    display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 8px;
+    font-size: 11px; font-weight: 500; vertical-align: middle;
+  }
+  .tab.active .badge { background: rgba(255,255,255,0.25); color: #fff; }
+  .tab:not(.active) .badge { background: var(--red-l); color: var(--red); }
+  .tab.notyet { border-color: var(--red); color: var(--red); font-weight: 500; }
+  .tab.notyet.active { background: var(--red); border-color: var(--red); }
+
+  .counter { text-align: center; font-size: 12px; color: var(--muted); margin: 2px 0 8px; }
+
+  .progress-wrap { max-width: 360px; margin: 0 auto 8px; padding: 0 16px; }
+  .progress-bar { width: 100%; height: 3px; background: var(--border); border-radius: 2px; }
+  .progress-fill { height: 100%; background: var(--text); border-radius: 2px; transition: width 0.3s; }
+
+  .deck { display: flex; flex-direction: column; align-items: center; padding: 0 16px; }
+
+  .card-wrap {
+    width: 100%; max-width: 360px; height: 200px; perspective: 1000px; cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .card-inner {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d;
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 16px; border: 0.5px solid var(--border); background: var(--card);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px 24px; text-align: center; overflow-y: auto;
+  }
+  .card-face.back { transform: rotateY(180deg); }
+  .card-tag { font-size: 11px; font-weight: 500; padding: 2px 10px; border-radius: 10px; margin-bottom: 12px; letter-spacing: 0.5px; }
+  .tag-red { background: var(--red-l); color: var(--red); }
+  .tag-blue { background: var(--blue-l); color: var(--blue); }
+  .tag-green { background: var(--green-l); color: var(--green); }
+  .tag-amber { background: var(--amber-l); color: var(--amber); }
+  .tag-teal { background: var(--teal-l); color: var(--teal); }
+  .tag-purple { background: var(--purple-l); color: var(--purple); }
+  .tag-rose { background: var(--rose-l); color: var(--rose); }
+  .card-q { font-size: 15px; font-weight: 500; line-height: 1.5; color: var(--text); }
+  .card-a { font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--text); margin-bottom: 6px; }
+  .card-detail { font-size: 12px; line-height: 1.6; color: var(--muted); }
+  .flip-hint { font-size: 10px; color: var(--muted); margin-top: 14px; letter-spacing: 1px; }
+
+  .know-btns {
+    display: flex; gap: 0; width: 100%; max-width: 360px; border-radius: 12px;
+    overflow: hidden; border: 0.5px solid var(--border); background: var(--card); margin-bottom: 12px;
+  }
+  .know-btn {
+    flex: 1; padding: 14px 0; border: none; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .know-btn:first-child { border-right: 0.5px solid var(--border); }
+  .know-btn.know:active { background: var(--green-l); }
+  .know-btn.dunno:active { background: var(--red-l); }
+  .know-btn.dunno.active-state { background: var(--red-l); color: var(--red); }
+  .know-btn .icon { font-size: 18px; line-height: 1; }
+  .dunno-count { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 8px; background: var(--red-l); color: var(--red); margin-left: 2px; }
+
+  .nav-row { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 8px; }
+  .nav-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid var(--border);
+    background: var(--card); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; color: var(--text); transition: background 0.15s;
+  }
+  .nav-btn:active { background: var(--bg); }
+  .nav-btn.disabled { opacity: 0.3; pointer-events: none; }
+
+  .actions { display: flex; gap: 10px; justify-content: center; padding: 0 16px 24px; flex-wrap: wrap; }
+  .act-btn {
+    padding: 8px 18px; border-radius: 20px; border: 0.5px solid var(--border);
+    background: var(--card); font-size: 13px; color: var(--text); cursor: pointer; transition: all 0.15s;
+  }
+  .act-btn:active { background: var(--bg); }
+  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 40px 20px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>生物会考 · 口袋手卡</h1>
+  <p>点击卡片翻转看答案 · 底部按钮标记"会"或"不会"</p>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="counter" id="counter"></div>
+
+<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="progress"></div></div></div>
+
+<div class="deck">
+  <div class="card-wrap" id="cardWrap">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face front" id="frontFace"></div>
+      <div class="card-face back" id="backFace"></div>
+    </div>
+  </div>
+
+  <div class="know-btns" id="knowBtns">
+    <button class="know-btn know" onclick="event.stopPropagation();markKnow()">
+      <span class="icon">&#10003;</span> 会了
+    </button>
+    <button class="know-btn dunno" id="dunnoBtn" onclick="event.stopPropagation();markDunno()">
+      <span class="icon">&#10007;</span> 不会
+    </button>
+  </div>
+</div>
+
+<div class="nav-row">
+  <button class="nav-btn" id="prevBtn" onclick="prevCard()">&#8592;</button>
+  <span style="font-size:13px;color:var(--muted)" id="pageIdx">1/10</span>
+  <button class="nav-btn" id="nextBtn" onclick="nextCard()">&#8594;</button>
+</div>
+
+<div class="actions">
+  <button class="act-btn" onclick="shuffleDeck()">随机洗牌</button>
+  <button class="act-btn" onclick="resetDeck()">恢复顺序</button>
+  <button class="act-btn" onclick="clearDunno()">清空"不会"</button>
+</div>
+
+<script>
+var currentTab = 'all';
+var currentIdx = 0;
+var cards = [];
+var filtered = [];
+var dunnoSet = {};  // keyed by card id, value: { cat, q }
+
+var allCards = [
+  { id:0,  cat:'肾的结构', tag:'tag-red', q:'肾小球的功能是什么？', a:'过滤血液', detail:'像筛子一样，把血细胞和大分子蛋白质拦下，让水、葡萄糖、无机盐、尿素等小分子通过，进入肾小囊形成原尿。' },
+  { id:1,  cat:'肾的结构', tag:'tag-red', q:'肾小管的功能是什么？', a:'重吸收', detail:'把原尿中的全部葡萄糖、大部分水、部分无机盐重新吸回血液。尿素不回收，留在尿液里排出。' },
+  { id:2,  cat:'肾的结构', tag:'tag-red', q:'肾小囊的功能是什么？', a:'收集原尿', detail:'包裹在肾小球外面的双层壁小袋子，接收肾小球滤出来的原尿，引导原尿流入肾小管。' },
+  { id:3,  cat:'肾的结构', tag:'tag-red', q:'尿中出现蛋白质说明哪里病变？', a:'肾小球病变', detail:'蛋白质是大分子，正常情况下被肾小球拦住。出现在尿液里说明肾小球的过滤膜坏了（肾小球肾炎）。' },
+  { id:4,  cat:'肾的结构', tag:'tag-red', q:'尿中出现葡萄糖说明哪里病变？', a:'肾小管病变', detail:'葡萄糖本该被肾小管重吸收回血液。出现在尿液里说明肾小管重吸收功能出了问题。' },
+  { id:5,  cat:'肾的结构', tag:'tag-red', q:'血液、原尿、终尿的最大区别？', a:'原尿无蛋白质，终尿无葡萄糖', detail:'血液→原尿：蛋白质和血细胞被肾小球拦下。原尿→终尿：葡萄糖被肾小管全部重吸收。' },
+
+  { id:6,  cat:'循环系统', tag:'tag-blue', q:'体循环的路线是什么？', a:'左心室→主动脉→全身毛细血管→上下腔静脉→右心房', detail:'给全身送氧气，收废气。左心室壁最厚，因为要把血打到全身，路程最长。' },
+  { id:7,  cat:'循环系统', tag:'tag-blue', q:'肺循环的路线是什么？', a:'右心室→肺动脉→肺部毛细血管→肺静脉→左心房', detail:'在肺里换气：扔掉CO₂，装上O₂。路程短，所以叫"小循环"。' },
+  { id:8,  cat:'循环系统', tag:'tag-blue', q:'肺动脉里流什么血？', a:'静脉血！', detail:'肺动脉虽然叫"动脉"，但它从右心室出发把缺氧血送往肺，所以流的是静脉血。这是唯一例外！动脉=离开心脏的血管，不是含氧量的意思。' },
+  { id:9,  cat:'循环系统', tag:'tag-blue', q:'肺静脉里流什么血？', a:'动脉血！', detail:'肺静脉虽然叫"静脉"，但它把刚从肺换完气的富氧血送回左心房，所以流的是动脉血。静脉=回到心脏的血管。' },
+  { id:10, cat:'循环系统', tag:'tag-blue', q:'为什么左心室壁最厚？', a:'泵血到全身，路程最长', detail:'左心室把血打入主动脉→全身各器官，需要最大力量。右心室只把血打到肺（很近），壁薄得多。' },
+  { id:11, cat:'循环系统', tag:'tag-blue', q:'体循环中发生了什么气体交换？', a:'O₂从血液进入细胞，CO₂从细胞进入血液', detail:'动脉血→全身毛细血管→O₂给组织细胞用，细胞产生的CO₂进入血液→静脉血→回心脏。' },
+  { id:12, cat:'循环系统', tag:'tag-blue', q:'肺循环中发生了什么气体交换？', a:'CO₂从血液进入肺泡，O₂从肺泡进入血液', detail:'静脉血→肺部毛细血管→CO₂呼出，O₂吸入→动脉血→肺静脉→左心房。' },
+
+  { id:13, cat:'消化系统', tag:'tag-amber', q:'五大消化腺分别分泌什么？', a:'唾液腺→唾液 | 胃腺→胃液 | 肝脏→胆汁 | 胰腺→胰液 | 肠腺→肠液', detail:'注意：胆汁不含消化酶！只起乳化脂肪的物理作用。胰液含酶最全（淀粉酶、蛋白酶、脂肪酶都有）。' },
+  { id:14, cat:'消化系统', tag:'tag-amber', q:'淀粉在哪里开始消化？终产物是什么？', a:'口腔开始消化，终产物是葡萄糖', detail:'口腔（唾液淀粉酶，淀粉→麦芽糖）→小肠（胰液+肠液，麦芽糖→葡萄糖）。主要消化场所在小肠。' },
+  { id:15, cat:'消化系统', tag:'tag-amber', q:'蛋白质在哪里开始消化？终产物是什么？', a:'胃开始消化，终产物是氨基酸', detail:'胃（胃蛋白酶，蛋白质→多肽）→小肠（胰液+肠液，多肽→氨基酸）。口腔不消化蛋白质。' },
+  { id:16, cat:'消化系统', tag:'tag-amber', q:'脂肪在哪里开始消化？终产物是什么？', a:'只在小肠消化，终产物是甘油+脂肪酸', detail:'胃和口腔都不消化脂肪！胆汁乳化脂肪（物理消化）→胰液和肠液中的脂肪酶分解（化学消化）→甘油+脂肪酸。' },
+  { id:17, cat:'消化系统', tag:'tag-amber', q:'胆汁含消化酶吗？起什么作用？', a:'不含酶！乳化脂肪（物理消化）', detail:'肝脏分泌胆汁，胆囊储存，进食时排入小肠。胆汁把大油滴打散成小油滴（脂肪微粒），增加脂肪与酶的接触面积。' },
+  { id:18, cat:'消化系统', tag:'tag-amber', q:'消化和吸收的主要场所是哪里？', a:'小肠', detail:'原因：有皱襞和绒毛，表面积大；有胆汁、胰液、肠液汇入，消化液最全；长度长（5-7米），停留时间足。' },
+
+  { id:19, cat:'植物分类', tag:'tag-teal', q:'藻类植物的特征？', a:'无根茎叶分化，无输导组织，水生', detail:'代表：海带、紫菜。海带的"叶状体"不是叶，"固着器"不是根。全身每个细胞都能吸收水分。' },
+  { id:20, cat:'植物分类', tag:'tag-teal', q:'苔藓植物的特征？', a:'有茎叶、假根，无输导组织', detail:'代表：葫芦藓、地钱。假根只管固定不管吸水，所以必须长在阴湿处，长不高。繁殖靠孢子，需要水。' },
+  { id:21, cat:'植物分类', tag:'tag-teal', q:'蕨类植物的特征？', a:'有根茎叶、有输导组织，孢子繁殖', detail:'代表：铁线蕨、肾蕨。终于有了真正的根和输导组织（导管+筛管），能长高。但还靠孢子繁殖，没摆脱水。' },
+  { id:22, cat:'植物分类', tag:'tag-teal', q:'裸子植物的特征？', a:'种子裸露，无果皮包被，无真正果实', detail:'代表：松、柏、银杏。种子直接长在种鳞上，没有果肉包着。银杏的"白果"是种子不是果实！' },
+  { id:23, cat:'植物分类', tag:'tag-teal', q:'被子植物的特征？', a:'种子有果皮包被，有真正的果实', detail:'代表：水稻、苹果、桃。因为有种皮+果皮双重保护+果实帮助传播，所以种类最多、分布最广。' },
+  { id:24, cat:'植物分类', tag:'tag-teal', q:'五大类群从低等到高等的顺序？', a:'藻类→苔藓→蕨类→裸子→被子', detail:'进化趋势：水生→陆生，简单→复杂，无根茎叶→有根茎叶→有种子→有果实。孢子繁殖→种子繁殖。' },
+  { id:25, cat:'植物分类', tag:'tag-teal', q:'海带的"根"叫什么？能吸水吗？', a:'固着器，不能吸水，只管固定', detail:'海带的"叶"叫叶状体，"茎"叫柄，"根"叫固着器。都没有真正根茎叶的分化。千万别在考试里写"根"！' },
+
+  { id:26, cat:'遗传与变异', tag:'tag-purple', q:'染色体、DNA、基因的关系？', a:'染色体>DNA>基因（包含关系）', detail:'染色体是DNA的载体（染色体由DNA+蛋白质组成），DNA是遗传物质，基因是有遗传效应的DNA片段。' },
+  { id:27, cat:'遗传与变异', tag:'tag-purple', q:'如何判断显性和隐性？', a:'无中生有为隐性', detail:'父母都没病（正常）→生出有病的孩子→该病为隐性遗传。父母都有病→生出没病的孩子→该病为显性遗传。' },
+  { id:28, cat:'遗传与变异', tag:'tag-purple', q:'生男生女谁决定？', a:'父亲（精子）决定', detail:'母亲只提供X染色体（卵细胞=22+X）。父亲提供X或Y（精子=22+X或22+Y）。XX=女，XY=男。' },
+  { id:29, cat:'遗传与变异', tag:'tag-purple', q:'可遗传变异和不可遗传变异的区别？', a:'看遗传物质是否改变', detail:'基因改变（基因突变、基因重组、染色体变异）→可遗传。环境导致的改变（晒黑、锻炼变壮）→不可遗传。' },
+  { id:30, cat:'遗传与变异', tag:'tag-purple', q:'减数分裂后染色体数量怎样变化？', a:'减半', detail:'正常体细胞染色体成对（2N），减数分裂后精子和卵细胞各含一半（N）。受精后恢复为2N。' },
+  { id:31, cat:'遗传与变异', tag:'tag-purple', q:'转基因技术的原理是什么？', a:'把一种生物的基因转入另一种生物', detail:'例如：把人的胰岛素基因转入大肠杆菌，让大肠杆菌生产胰岛素。改变的是生物的基因组成。' },
+
+  { id:32, cat:'微生物与细胞', tag:'tag-rose', q:'细菌有成形细胞核吗？', a:'无！是原核生物', detail:'细菌的DNA集中在细胞质中形成"集中区域"，但没有核膜包裹。所以细菌是原核生物，没有真正的细胞核。真菌才有。' },
+  { id:33, cat:'微生物与细胞', tag:'tag-rose', q:'真菌是真核还是原核？', a:'真核生物', detail:'真菌（酵母菌、霉菌、蘑菇）有真正的细胞核，是真核生物。细胞壁是几丁质，不是肽聚糖。细菌才是原核生物。' },
+  { id:34, cat:'微生物与细胞', tag:'tag-rose', q:'病毒有细胞结构吗？能否独立生存？', a:'无细胞结构！不能独立生存！', detail:'病毒 = 蛋白质外壳 + 遗传物质（DNA或RNA）。没有细胞膜、细胞质、细胞核。必须寄生在活细胞内才能复制增殖。' },
+  { id:35, cat:'微生物与细胞', tag:'tag-rose', q:'细菌的细胞壁成分是什么？', a:'肽聚糖', detail:'细菌细胞壁 = 肽聚糖。真菌细胞壁 = 几丁质。植物细胞壁 = 纤维素。三者成分完全不同，考试常混着考！' },
+  { id:36, cat:'微生物与细胞', tag:'tag-rose', q:'动物细胞和植物细胞最大的三个区别？', a:'动物：无细胞壁、无叶绿体、有中心体', detail:'植物：有细胞壁（纤维素）、有叶绿体（绿色部分）、有大液泡。注意：根细胞没有叶绿体（地下不见光）。' },
+  { id:37, cat:'微生物与细胞', tag:'tag-rose', q:'细菌、真菌、病毒如何繁殖？', a:'细菌→分裂 | 真菌→孢子 | 病毒→复制', detail:'细菌一个变俩（分裂生殖）。真菌靠孢子（蘑菇的"伞"下面就是孢子）。病毒在宿主细胞内利用宿主材料复制自己。' },
+  { id:38, cat:'微生物与细胞', tag:'tag-rose', q:'病毒的大小级别？用什么看？', a:'纳米级，电子显微镜才能看到', detail:'病毒最小（纳米级），细菌中等（微米级，光学显微镜可看到），真菌最大（酵母微米，蘑菇厘米）。病毒必须用电子显微镜。' },
+  { id:39, cat:'微生物与细胞', tag:'tag-rose', q:'荚膜和鞭毛谁有？什么用？', a:'部分细菌有！保护+运动', detail:'荚膜→保护细菌不被白细胞吞噬。鞭毛→帮助细菌运动游走。注意：真菌和病毒没有荚膜和鞭毛！' },
+];
+
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function filterCards(tab) {
+  currentTab = tab;
+  if (tab === 'all') {
+    filtered = cards.slice();
+  } else if (tab === 'dunno') {
+    var dunnoIds = Object.keys(dunnoSet).map(Number);
+    filtered = cards.filter(function(c) { return dunnoIds.indexOf(c.id) !== -1; });
+  } else {
+    filtered = cards.filter(function(c) { return c.cat === tab; });
+  }
+  currentIdx = 0;
+  render();
+}
+
+function markDunno() {
+  var card = filtered[currentIdx];
+  if (!card) return;
+  dunnoSet[card.id] = { cat: card.cat, q: card.q };
+  updateTabBadges();
+  var btn = document.getElementById('dunnoBtn');
+  btn.classList.add('active-state');
+  setTimeout(function() { btn.classList.remove('active-state'); }, 300);
+  // auto advance to next
+  if (currentIdx < filtered.length - 1) { currentIdx++; render(); } else { render(); }
+}
+
+function markKnow() {
+  var card = filtered[currentIdx];
+  if (!card) return;
+  // remove from dunno if present
+  if (dunnoSet[card.id]) {
+    delete dunnoSet[card.id];
+    updateTabBadges();
+  }
+  if (currentIdx < filtered.length - 1) { currentIdx++; render(); } else { render(); }
+}
+
+function clearDunno() {
+  dunnoSet = {};
+  updateTabBadges();
+  if (currentTab === 'dunno') { filterCards('all'); } else { render(); }
+}
+
+function countDunno() {
+  return Object.keys(dunnoSet).length;
+}
+
+function updateTabBadges() {
+  var n = countDunno();
+  var tabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabs.length; i++) {
+    var t = tabs[i];
+    var key = t.getAttribute('data-key');
+    if (key === 'dunno') {
+      if (n > 0) {
+        t.style.display = '';
+        var b = t.querySelector('.badge') || document.createElement('span');
+        b.className = 'badge';
+        b.textContent = n;
+        if (!t.querySelector('.badge')) t.appendChild(b);
+      } else {
+        t.style.display = 'none';
+      }
+    }
+  }
+  // update the dunno button text
+  var dn = document.querySelector('.dunno-count') || document.getElementById('dunnoCount');
+}
+
+function render() {
+  // update dunno button count
+  var db = document.getElementById('dunnoBtn');
+  if (filtered.length === 0) {
+    document.getElementById('cardWrap').style.display = 'none';
+    document.getElementById('knowBtns').style.display = 'none';
+    document.getElementById('counter').innerHTML = '<div class="empty">当前没有手卡</div>';
+    document.getElementById('progress').style.width = '0%';
+    document.getElementById('pageIdx').textContent = '0/0';
+    document.getElementById('prevBtn').classList.add('disabled');
+    document.getElementById('nextBtn').classList.add('disabled');
+    return;
+  }
+  document.getElementById('cardWrap').style.display = 'block';
+  document.getElementById('knowBtns').style.display = 'flex';
+
+  var card = filtered[currentIdx];
+  var isDunno = !!dunnoSet[card.id];
+
+  document.getElementById('cardInner').classList.remove('flipped');
+  document.getElementById('frontFace').innerHTML =
+    '<span class="card-tag ' + card.tag + '">' + card.cat + '</span>' +
+    '<p class="card-q">' + card.q + '</p>' +
+    '<span class="flip-hint">点击翻转看答案</span>';
+  document.getElementById('backFace').innerHTML =
+    '<span class="card-tag ' + card.tag + '">' + card.cat + '</span>' +
+    '<p class="card-a">' + card.a + '</p>' +
+    '<p class="card-detail">' + card.detail + '</p>' +
+    '<span class="flip-hint">点击翻回题目</span>';
+
+  // update dunno button
+  var n = countDunno();
+  var dnLabel = '不会' + (n > 0 ? ' (' + n + ')' : '');
+  db.innerHTML = '<span class="icon">&#10007;</span> ' + dnLabel;
+
+  if (isDunno) {
+    db.classList.add('active-state');
+  } else {
+    db.classList.remove('active-state');
+  }
+
+  document.getElementById('counter').textContent = (currentIdx + 1) + ' / ' + filtered.length;
+  document.getElementById('pageIdx').textContent = (currentIdx + 1) + '/' + filtered.length;
+  document.getElementById('progress').style.width = ((currentIdx + 1) / filtered.length * 100) + '%';
+
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  if (currentIdx === 0) prevBtn.classList.add('disabled'); else prevBtn.classList.remove('disabled');
+  if (currentIdx >= filtered.length - 1) nextBtn.classList.add('disabled'); else nextBtn.classList.remove('disabled');
+}
+
+function nextCard() { if (currentIdx < filtered.length - 1) { currentIdx++; render(); } }
+function prevCard() { if (currentIdx > 0) { currentIdx--; render(); } }
+
+function shuffleDeck() { cards = shuffle(allCards); filterCards(currentTab); }
+function resetDeck() { cards = allCards.slice(); filterCards(currentTab); }
+
+function flipCard() { document.getElementById('cardInner').classList.toggle('flipped'); }
+
+document.getElementById('cardWrap').addEventListener('click', flipCard);
+
+var touchStartX = 0;
+document.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', function(e) {
+  var dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 60) { if (dx < 0) nextCard(); else prevCard(); }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowLeft') prevCard();
+  if (e.key === 'ArrowRight') nextCard();
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); markDunno(); }
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+});
+
+var categories = ['all','肾的结构','循环系统','消化系统','植物分类','遗传与变异','微生物与细胞','dunno'];
+var tabNames = { all:'全部', '肾的结构':'肾的结构', '循环系统':'体循环与肺循环', '消化系统':'消化系统', '植物分类':'植物分类', '遗传与变异':'遗传与变异', '微生物与细胞':'微生物与细胞', dunno:'不会' };
+var tabHTML = '';
+for (var i = 0; i < categories.length; i++) {
+  var c = categories[i];
+  var style = c === 'dunno' ? ' style="display:none"' : '';
+  tabHTML += '<span class="tab' + (c === 'all' ? ' active' : '') + (c === 'dunno' ? ' notyet' : '') + '" data-key="' + c + '" onclick="filterCards(\'' + c + '\')"' + style + '>' + tabNames[c] + '</span>';
+}
+document.getElementById('tabs').innerHTML = tabHTML;
+
+var origFilterCards = filterCards;
+filterCards = function(tab) {
+  origFilterCards(tab);
+  var allTabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < allTabs.length; i++) {
+    var key = allTabs[i].getAttribute('data-key');
+    if (key === tab) allTabs[i].classList.add('active');
+    else allTabs[i].classList.remove('active');
+  }
+};
+
+cards = allCards.slice();
+filterCards('all');
+updateTabBadges();
+</script>
+
+<div class="back-link" style="text-align:center;padding:0 16px 16px;"><a href="index.html" style="font-size:13px;color:var(--muted);text-decoration:none;">返回首页</a></div>
+
+</body>
+</html>

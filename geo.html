@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>地理会考 · 口袋手卡</title>
+<style>
+  :root {
+    --bg: #f8f7f4; --card: #fff; --text: #2c2c2a; --muted: #888780;
+    --border: #d3d1c7;
+    --red: #e24b4a; --blue: #378add; --green: #639922; --amber: #ef9f27; --teal: #1d9e75; --purple: #7f77dd; --rose: #d4537e;
+    --red-l: #fcebeb; --blue-l: #e6f1fb; --green-l: #eaf3de; --amber-l: #faeeda; --teal-l: #e1f5ee; --purple-l: #eeedfe; --rose-l: #fbeaf0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6;
+    min-height: 100vh; -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  .header { padding: 14px 16px 6px; text-align: center; }
+  .header h1 { font-size: 18px; font-weight: 500; }
+  .header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .tabs {
+    display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none; justify-content: center; flex-wrap: wrap;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0; padding: 6px 12px; border-radius: 20px;
+    border: 0.5px solid var(--border); background: var(--card);
+    font-size: 12px; font-weight: 400; color: var(--muted); cursor: pointer;
+    white-space: nowrap; transition: all 0.15s;
+  }
+  .tab.active { background: var(--text); color: #fff; border-color: var(--text); font-weight: 500; }
+  .tab .badge {
+    display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 8px;
+    font-size: 11px; font-weight: 500; vertical-align: middle;
+  }
+  .tab.active .badge { background: rgba(255,255,255,0.25); color: #fff; }
+  .tab:not(.active) .badge { background: var(--red-l); color: var(--red); }
+  .tab.notyet { border-color: var(--red); color: var(--red); font-weight: 500; }
+  .tab.notyet.active { background: var(--red); border-color: var(--red); }
+
+  .counter { text-align: center; font-size: 12px; color: var(--muted); margin: 2px 0 8px; }
+
+  .progress-wrap { max-width: 360px; margin: 0 auto 8px; padding: 0 16px; }
+  .progress-bar { width: 100%; height: 3px; background: var(--border); border-radius: 2px; }
+  .progress-fill { height: 100%; background: var(--text); border-radius: 2px; transition: width 0.3s; }
+
+  .deck { display: flex; flex-direction: column; align-items: center; padding: 0 16px; }
+
+  .card-wrap {
+    width: 100%; max-width: 360px; height: 220px; perspective: 1000px; cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .card-inner {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d;
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 16px; border: 0.5px solid var(--border); background: var(--card);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px 24px; text-align: center; overflow-y: auto;
+  }
+  .card-face.back { transform: rotateY(180deg); }
+  .card-tag { font-size: 11px; font-weight: 500; padding: 2px 10px; border-radius: 10px; margin-bottom: 12px; letter-spacing: 0.5px; }
+  .tag-blue { background: var(--blue-l); color: var(--blue); }
+  .tag-teal { background: var(--teal-l); color: var(--teal); }
+  .tag-amber { background: var(--amber-l); color: var(--amber); }
+  .tag-purple { background: var(--purple-l); color: var(--purple); }
+  .tag-rose { background: var(--rose-l); color: var(--rose); }
+  .card-q { font-size: 15px; font-weight: 500; line-height: 1.5; color: var(--text); }
+  .card-a { font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--text); margin-bottom: 6px; }
+  .card-detail { font-size: 12px; line-height: 1.6; color: var(--muted); }
+  .flip-hint { font-size: 10px; color: var(--muted); margin-top: 14px; letter-spacing: 1px; }
+
+  .know-btns {
+    display: flex; gap: 0; width: 100%; max-width: 360px; border-radius: 12px;
+    overflow: hidden; border: 0.5px solid var(--border); background: var(--card); margin-bottom: 12px;
+  }
+  .know-btn {
+    flex: 1; padding: 14px 0; border: none; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .know-btn:first-child { border-right: 0.5px solid var(--border); }
+  .know-btn.know:active { background: var(--green-l); }
+  .know-btn.dunno:active { background: var(--red-l); }
+  .know-btn.dunno.active-state { background: var(--red-l); color: var(--red); }
+
+  .nav-row { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 8px; }
+  .nav-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid var(--border);
+    background: var(--card); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; color: var(--text); transition: background 0.15s;
+  }
+  .nav-btn:active { background: var(--bg); }
+  .nav-btn.disabled { opacity: 0.3; pointer-events: none; }
+
+  .actions { display: flex; gap: 10px; justify-content: center; padding: 0 16px 24px; flex-wrap: wrap; }
+  .act-btn {
+    padding: 8px 18px; border-radius: 20px; border: 0.5px solid var(--border);
+    background: var(--card); font-size: 13px; color: var(--text); cursor: pointer; transition: all 0.15s;
+  }
+  .act-btn:active { background: var(--bg); }
+  .back-link { text-align: center; padding: 0 16px 16px; }
+  .back-link a { font-size: 13px; color: var(--muted); text-decoration: none; }
+  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 40px 20px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>地理会考 · 五大考点口袋手卡</h1>
+  <p>点击卡片翻转看答案 · 底部按钮标记"会"或"不会"</p>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="counter" id="counter"></div>
+
+<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="progress"></div></div></div>
+
+<div class="deck">
+  <div class="card-wrap" id="cardWrap">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face front" id="frontFace"></div>
+      <div class="card-face back" id="backFace"></div>
+    </div>
+  </div>
+
+  <div class="know-btns" id="knowBtns">
+    <button class="know-btn know" onclick="event.stopPropagation();markKnow()">
+      <span style="font-size:18px;line-height:1">&#10003;</span> 会了
+    </button>
+    <button class="know-btn dunno" id="dunnoBtn" onclick="event.stopPropagation();markDunno()">
+      <span style="font-size:18px;line-height:1">&#10007;</span> 不会
+    </button>
+  </div>
+</div>
+
+<div class="nav-row">
+  <button class="nav-btn" id="prevBtn" onclick="prevCard()">&#8592;</button>
+  <span style="font-size:13px;color:var(--muted)" id="pageIdx">1/10</span>
+  <button class="nav-btn" id="nextBtn" onclick="nextCard()">&#8594;</button>
+</div>
+
+<div class="actions">
+  <button class="act-btn" onclick="shuffleDeck()">随机洗牌</button>
+  <button class="act-btn" onclick="resetDeck()">恢复顺序</button>
+  <button class="act-btn" onclick="clearDunno()">清空"不会"</button>
+</div>
+
+<div class="back-link"><a href="index.html">返回首页</a></div>
+
+<script>
+var currentTab = 'all';
+var currentIdx = 0;
+var cards = [];
+var filtered = [];
+var dunnoSet = {};
+
+var allCards = [
+  { id:0,  cat:'区域地理', tag:'tag-blue', q:'华南前汛期和后汛期水汽分别来自哪里？', a:'前汛期来自印度洋，后汛期来自太平洋', detail:'4-6月前汛期：西南季风从印度洋（孟加拉湾）输送水汽。7-9月后汛期：东南季风和台风从太平洋输送水汽。口诀：前印后太。' },
+  { id:1,  cat:'区域地理', tag:'tag-blue', q:'海南岛的地形特征是什么？', a:'中间高、四周低，呈穹隆状', detail:'最高峰五指山(1867m)。河流从中心向四周呈放射状流。注意区别于台湾岛：台湾东高西低，有南北走向的中央山脉。' },
+  { id:2,  cat:'区域地理', tag:'tag-blue', q:'受岛屿地形影响，海南岛河流的突出特征？', a:'流程短、流速快、呈放射状', detail:'岛面积有限→流程短。中高周低→落差大→流速快。热带季风气候→降水季节不均→径流不稳定（不是"径流稳定"！）。' },
+  { id:3,  cat:'区域地理', tag:'tag-blue', q:'海南岛和台湾岛的地形河流怎么区分？', a:'海南中高四周低放射状，台湾东高西低东西分流', detail:'海南最高峰五指山1867m，台湾最高峰玉山3952m。海南山脉穹隆状无方向，台湾中央山脉南北走向。' },
+  { id:4,  cat:'区域地理', tag:'tag-blue', q:'中国自东向西的经度地带性景观变化？', a:'森林→草原→荒漠草原→荒漠', detail:'距海越远降水越少。东部>800mm森林，中部200-400mm草原，西北<200mm荒漠。口诀：东森西漠，中间草原。' },
+  { id:5,  cat:'区域地理', tag:'tag-blue', q:'分析一个区域的通用框架是什么？', a:'自然条件（地形+气候+河流）+人文（交通+产业+聚落）+人地关系（生态+灾害）', detail:'一看位置定气候，二看地形定河流，三看人文定经济，四看问题定对策。从这三个维度出发，任何区域分析题都能答。' },
+
+  { id:6,  cat:'气候判断', tag:'tag-teal', q:'中国锋面雨带推移的时间线？', a:'5月华南→6月江淮→7-8月华北东北→9月南退', detail:'五月南岭雨，六月江淮梅，七八到华北，九月往南回。华南前汛期水汽来自印度洋（西南季风），后汛期来自太平洋。' },
+  { id:7,  cat:'气候判断', tag:'tag-teal', q:'热带季风气候 vs 亚热带季风气候的区别？', a:'热带：终年高温(>20°C)+旱雨季。亚热带：最冷月>0°C+夏雨', detail:'热带季风典型：海南、滇南。亚热带季风典型：长江中下游、华南大部。温带季风：最冷月<0°C，华北东北。' },
+  { id:8,  cat:'气候判断', tag:'tag-teal', q:'热带沙漠气候的特征和典型地区？', a:'终年高温，极端干旱。北非、西亚（如佩特拉/约旦）', detail:'海拔低+副热带高压控制+离海远。佩特拉古城蓄水池建于地下就是为了减少蒸发。三步判断法：看气温→看降水→看季节分配。' },
+  { id:9,  cat:'气候判断', tag:'tag-teal', q:'温带大陆性气候 vs 温带季风气候？', a:'大陆性：温差大+全年少雨。季风：夏热冬冷+夏雨集中', detail:'西北内陆=温带大陆性（年降水<400mm）。华北东北=温带季风（最冷月<0°C，但夏季雨量可观）。' },
+  { id:10, cat:'气候判断', tag:'tag-teal', q:'高原山地气候的特征？', a:'终年低温、日温差大、垂直变化显著', detail:'青藏高原典型。海拔越高气温越低（每升高1000m降温约6°C）。"一山有四季，十里不同天"说的就是高原山地的垂直变化。' },
+
+  { id:11, cat:'地球运动', tag:'tag-purple', q:'赤道地区昼夜长短有什么特殊性？', a:'终年昼夜等长（各约12小时），不受季节影响', detail:'不管太阳直射北半球还是南半球，赤道始终是昼≈夜≈12h。这是最容易错的地方——不要以为季节变了赤道也会变。' },
+  { id:12, cat:'地球运动', tag:'tag-purple', q:'二分二至日分别是哪天？直射哪里？', a:'春分3.21赤道 | 夏至6.22北回归线 | 秋分9.23赤道 | 冬至12.22南回归线', detail:'夏至：北半球昼最长夜最短，北极圈极昼。冬至：北半球昼最短夜最长，北极圈极夜。春秋分：全球昼夜等长。' },
+  { id:13, cat:'地球运动', tag:'tag-purple', q:'昼夜长短的判断铁律是什么？', a:'太阳直射哪个半球，哪个半球就昼长夜短', detail:'直射北半球(3.21→9.23)→北半球昼长夜短，越往北极昼越长。直射南半球(9.23→次年3.21)→南半球昼长夜短。' },
+  { id:14, cat:'地球运动', tag:'tag-purple', q:'极昼极夜的范围怎么算？', a:'极昼范围 = 90° - |太阳直射纬度|', detail:'夏至直射23.5°N→极昼从66.5°N(北极圈)到90°N。冬至直射23.5°S→南极圈内极昼。春分秋分直射赤道→无极昼极夜。' },
+  { id:15, cat:'地球运动', tag:'tag-purple', q:'10月1日国庆节，北京的昼夜长短情况？', a:'昼短夜长（直射点在南半球）', detail:'9月23日秋分后太阳直射南半球，北半球开始昼短夜长，越往后夜越长。国庆在秋分后约一周，昼已明显短于夜。' },
+
+  { id:16, cat:'自然灾害', tag:'tag-amber', q:'北半球台风不同位置的刮什么风？', a:'北侧东北/东风，东侧东南/南风，南侧西南/西风，西侧西北/北风', detail:'台风=北半球气旋=逆时针向中心辐合。先定位再画箭头：台风在东边，你在西边→刮西北风。箭头方向=风吹来的方向。' },
+  { id:17, cat:'自然灾害', tag:'tag-amber', q:'地震多发的原因（标准答题模板）？', a:'位于XX板块与XX板块交界处→地壳运动活跃→多地震', detail:'无论问哪个地方的地震，逻辑都一样。缅甸地震→印度洋板块与亚欧板块交界。日本地震→太平洋板块与亚欧板块交界。' },
+  { id:18, cat:'自然灾害', tag:'tag-amber', q:'地震和台风分别属于什么灾害类型？', a:'地震=地质灾害（内力）。台风=气象灾害', detail:'内力作用引起：地震、火山。外力/气象引起：台风、洪涝、干旱、寒潮。泥石流和滑坡常由地震或暴雨触发。' },
+  { id:19, cat:'自然灾害', tag:'tag-amber', q:'台风防御措施的三个时间阶段？', a:'登陆前：预警+加固+撤离。登陆时：室内躲避。登陆后：防次生灾害', detail:'台风预警信号：蓝→黄→橙→红（严重程度递增）。重点：不要在户外广告牌、大树下躲避！台风眼过境时短暂风平浪静不要外出。' },
+  { id:20, cat:'自然灾害', tag:'tag-amber', q:'为什么台风的"台风眼"反而是无风区？', a:'气流被离心力甩向外围，中心形成下沉气流', detail:'台风中心气压极低，空气急速旋转上升，在离心力作用下中心反而成为无风晴朗区。但台风眼一过，狂风暴雨立即恢复。' },
+
+  { id:21, cat:'农业区位', tag:'tag-rose', q:'农业区位因素分析的万能框架？', a:'自然（气候+地形+水源+土壤）+ 社会经济（市场+交通+技术+政策+劳动力）', detail:'光热水土是基础，市政技劳是变化。综合题至少从两方面各答2-3点。自然条件一般难改变，社会经济条件可以通过人类活动改变。' },
+  { id:22, cat:'农业区位', tag:'tag-rose', q:'分析临沧种夏威夷果的有利自然条件？', a:'亚热带季风气候（光热足）+山地地形（排水好）+适中海拔（温差大）+酸性红壤', detail:'夏威夷果怕涝→山地排水好是优势不是劣势。海拔800-1300m→昼夜温差大→利于糖分和营养积累。记住：地形不只看高矮，还要看对作物的影响。' },
+  { id:23, cat:'农业区位', tag:'tag-rose', q:'农业可持续发展的建议从哪三维度？', a:'经济（深加工+品牌）+ 社会（就业+增收）+ 生态（防过度开垦+水土保持）', detail:'任何农业综合题最后必问发展建议。经济→延长产业链加工升值。社会→带动就业改善民生。生态→保护环境可持续。三管齐下不丢分。' },
+  { id:24, cat:'农业区位', tag:'tag-rose', q:'"锁边"工程种玫瑰花是什么模式？', a:'生态+经济双赢模式', detail:'生态：固沙防风。经济：玫瑰花可加工销售（花茶、精油）带来收入。社会：带动就业。关键是理解"生态治理不是纯投入，可以有经济回报"。' },
+  { id:25, cat:'农业区位', tag:'tag-rose', q:'梯田石堰的作用是什么？不能改变什么？', a:'可调节温度和水土，不能改变光照和降水总量', detail:'石头比热容小→白天吸热晚上放热→调节微气候温度。减缓径流→蓄水保墒。但光照取决于太阳+朝向，降水取决于大气，石堰改不了。' },
+
+  { id:26, cat:'综合速记', tag:'tag-blue', q:'佩特拉古城蓄水池为何建地下？', a:'减少蒸发（热带沙漠气候，极端干旱）', detail:'不是"防敌人"——虽然也隐蔽，但最主要目的是节水。干旱区的坎儿井也是同样原理：地下渠道减少蒸发。' },
+  { id:27, cat:'综合速记', tag:'tag-teal', q:'气候对传统民居有哪些常见影响？', a:'墙厚→保温隔热。窗小→防风沙/保温。平顶→少雨。坡顶→多雨排水', detail:'西北庄窠→土墙厚、窗小、防寒抗风沙。南方→坡顶利于排水、底层架空防潮。西亚→厚墙小窗平顶。看到民居先想当地气候。' },
+  { id:28, cat:'综合速记', tag:'tag-purple', q:'太阳直射点在一年中怎样移动？', a:'冬至→向北移动→夏至→向南移动→冬至，循环往复', detail:'12.22直射南回归线→逐渐北移→3.21过赤道→继续北移→6.22到北回归线→折返南移→9.23过赤道→12.22回到南回归线。' },
+  { id:29, cat:'综合速记', tag:'tag-amber', q:'经度地带性和纬度地带性的区别？', a:'经度地带性=东西向（水分变化）。纬度地带性=南北向（热量变化）', detail:'从沿海到内陆=经度地带性（森林→草原→荒漠）。从赤道到两极=纬度地带性（热带→温带→寒带）。中国西北地区典型体现了经度地带性。' },
+  { id:30, cat:'综合速记', tag:'tag-rose', q:'综合题常见丢分原因和应对？', a:'审题不清 + 漏答维度 + 缺乏逻辑层次', detail:'圈关键词区分自然vs社会经济。自然=光热水土。社会=市政技劳。分点作答用"首先其次最后"。宁多勿少但不要重复同一点。' },
+];
+
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function filterCards(tab) {
+  currentTab = tab;
+  if (tab === 'all') {
+    filtered = cards.slice();
+  } else if (tab === 'dunno') {
+    var dunnoIds = Object.keys(dunnoSet).map(Number);
+    filtered = cards.filter(function(c) { return dunnoIds.indexOf(c.id) !== -1; });
+  } else {
+    filtered = cards.filter(function(c) { return c.cat === tab; });
+  }
+  currentIdx = 0;
+  render();
+}
+
+function markDunno() {
+  var card = filtered[currentIdx];
+  if (!card) return;
+  dunnoSet[card.id] = { cat: card.cat, q: card.q };
+  updateTabBadges();
+  var btn = document.getElementById('dunnoBtn');
+  btn.classList.add('active-state');
+  setTimeout(function() { btn.classList.remove('active-state'); }, 300);
+  if (currentIdx < filtered.length - 1) { currentIdx++; render(); } else { render(); }
+}
+
+function markKnow() {
+  var card = filtered[currentIdx];
+  if (!card) return;
+  if (dunnoSet[card.id]) {
+    delete dunnoSet[card.id];
+    updateTabBadges();
+  }
+  if (currentIdx < filtered.length - 1) { currentIdx++; render(); } else { render(); }
+}
+
+function clearDunno() {
+  dunnoSet = {};
+  updateTabBadges();
+  if (currentTab === 'dunno') { filterCards('all'); } else { render(); }
+}
+
+function countDunno() { return Object.keys(dunnoSet).length; }
+
+function updateTabBadges() {
+  var n = countDunno();
+  var tabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabs.length; i++) {
+    var t = tabs[i];
+    var key = t.getAttribute('data-key');
+    if (key === 'dunno') {
+      if (n > 0) {
+        t.style.display = '';
+        var b = t.querySelector('.badge') || document.createElement('span');
+        b.className = 'badge';
+        b.textContent = n;
+        if (!t.querySelector('.badge')) t.appendChild(b);
+      } else {
+        t.style.display = 'none';
+      }
+    }
+  }
+}
+
+function render() {
+  if (filtered.length === 0) {
+    document.getElementById('cardWrap').style.display = 'none';
+    document.getElementById('knowBtns').style.display = 'none';
+    document.getElementById('counter').innerHTML = '<div class="empty">当前没有手卡</div>';
+    document.getElementById('progress').style.width = '0%';
+    document.getElementById('pageIdx').textContent = '0/0';
+    document.getElementById('prevBtn').classList.add('disabled');
+    document.getElementById('nextBtn').classList.add('disabled');
+    return;
+  }
+  document.getElementById('cardWrap').style.display = 'block';
+  document.getElementById('knowBtns').style.display = 'flex';
+
+  var card = filtered[currentIdx];
+  document.getElementById('cardInner').classList.remove('flipped');
+  document.getElementById('frontFace').innerHTML =
+    '<span class="card-tag ' + card.tag + '">' + card.cat + '</span>' +
+    '<p class="card-q">' + card.q + '</p>' +
+    '<span class="flip-hint">点击翻转看答案</span>';
+  document.getElementById('backFace').innerHTML =
+    '<span class="card-tag ' + card.tag + '">' + card.cat + '</span>' +
+    '<p class="card-a">' + card.a + '</p>' +
+    '<p class="card-detail">' + card.detail + '</p>' +
+    '<span class="flip-hint">点击翻回题目</span>';
+
+  var n = countDunno();
+  var db = document.getElementById('dunnoBtn');
+  db.innerHTML = '<span style="font-size:18px;line-height:1">&#10007;</span> 不会' + (n > 0 ? ' (' + n + ')' : '');
+  if (dunnoSet[card.id]) { db.classList.add('active-state'); } else { db.classList.remove('active-state'); }
+
+  document.getElementById('counter').textContent = (currentIdx + 1) + ' / ' + filtered.length;
+  document.getElementById('pageIdx').textContent = (currentIdx + 1) + '/' + filtered.length;
+  document.getElementById('progress').style.width = ((currentIdx + 1) / filtered.length * 100) + '%';
+
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  if (currentIdx === 0) prevBtn.classList.add('disabled'); else prevBtn.classList.remove('disabled');
+  if (currentIdx >= filtered.length - 1) nextBtn.classList.add('disabled'); else nextBtn.classList.remove('disabled');
+}
+
+function nextCard() { if (currentIdx < filtered.length - 1) { currentIdx++; render(); } }
+function prevCard() { if (currentIdx > 0) { currentIdx--; render(); } }
+
+function shuffleDeck() { cards = shuffle(allCards); filterCards(currentTab); }
+function resetDeck() { cards = allCards.slice(); filterCards(currentTab); }
+
+function flipCard() { document.getElementById('cardInner').classList.toggle('flipped'); }
+
+document.getElementById('cardWrap').addEventListener('click', flipCard);
+
+var touchStartX = 0;
+document.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', function(e) {
+  var dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 60) { if (dx < 0) nextCard(); else prevCard(); }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowLeft') prevCard();
+  if (e.key === 'ArrowRight') nextCard();
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); markDunno(); }
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+});
+
+var categories = ['all','区域地理','气候判断','地球运动','自然灾害','农业区位','综合速记','dunno'];
+var tabNames = { all:'全部', '区域地理':'区域地理', '气候判断':'气候判断', '地球运动':'地球运动', '自然灾害':'自然灾害', '农业区位':'农业区位', '综合速记':'综合速记', dunno:'不会' };
+var tabHTML = '';
+for (var i = 0; i < categories.length; i++) {
+  var c = categories[i];
+  var style = c === 'dunno' ? ' style="display:none"' : '';
+  tabHTML += '<span class="tab' + (c === 'all' ? ' active' : '') + (c === 'dunno' ? ' notyet' : '') + '" data-key="' + c + '" onclick="filterCards(\'' + c + '\')"' + style + '>' + tabNames[c] + '</span>';
+}
+document.getElementById('tabs').innerHTML = tabHTML;
+
+var origFilterCards = filterCards;
+filterCards = function(tab) {
+  origFilterCards(tab);
+  var allTabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < allTabs.length; i++) {
+    var key = allTabs[i].getAttribute('data-key');
+    if (key === tab) allTabs[i].classList.add('active');
+    else allTabs[i].classList.remove('active');
+  }
+};
+
+cards = allCards.slice();
+filterCards('all');
+updateTabBadges();
+</script>
+
+</body>
+</html>
