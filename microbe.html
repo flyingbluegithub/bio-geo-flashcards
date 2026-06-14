@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>细菌·真菌·病毒 · 口袋手卡</title>
+<style>
+:root {
+  --bg: #faf9f6; --card: #ffffff; --text: #1a1a1a; --muted: #888; --border: #e5e2dc;
+  --blue: #378add; --blue-l: #e6f1fb;
+  --green: #1d9e75; --green-l: #e1f5ee;
+  --red: #e24b4a; --red-l: #fcebeb;
+  --amber: #ba7517; --amber-l: #faeeda;
+  --purple: #7f77dd; --purple-l: #eeedfe;
+  --radius: 16px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+
+.header { text-align: center; padding: 28px 20px 8px; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.tabs {
+  display: flex; gap: 8px; padding: 12px 16px 8px;
+  overflow-x: auto; scrollbar-width: none; justify-content: center; flex-wrap: wrap;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--card); color: var(--muted);
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.tab .count { font-size: 10px; opacity: 0.7; margin-left: 2px; }
+
+.stats {
+  display: flex; justify-content: center; gap: 24px;
+  padding: 8px 16px 16px; font-size: 12px; color: var(--muted);
+}
+.stats span strong { color: var(--text); }
+
+.card-area { display: flex; flex-direction: column; align-items: center; padding: 0 16px 40px; }
+.card-wrapper { width: 100%; max-width: 420px; perspective: 1000px; margin-bottom: 16px; }
+.card {
+  position: relative; width: 100%; min-height: 300px;
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  cursor: pointer; transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); padding: 28px 24px;
+}
+.card.flipped { transform: rotateY(180deg); }
+
+.card-front, .card-back {
+  position: absolute; inset: 0; padding: 28px 24px;
+  backface-visibility: hidden; border-radius: var(--radius);
+  display: flex; flex-direction: column;
+}
+.card-back { transform: rotateY(180deg); background: var(--card); }
+
+.card-num { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 16px; }
+.card-category {
+  display: inline-block; font-size: 10px; font-weight: 600;
+  padding: 3px 10px; border-radius: 10px; margin-bottom: 20px; letter-spacing: 0.5px;
+}
+.cat-bacteria { background: var(--blue-l); color: var(--blue); }
+.cat-fungi { background: var(--green-l); color: var(--green); }
+.cat-virus { background: var(--red-l); color: var(--red); }
+.cat-compare { background: var(--amber-l); color: var(--amber); }
+.cat-trap { background: #fbeaf0; color: #d4537e; }
+
+.card-question { font-size: 16px; font-weight: 600; line-height: 1.6; flex: 1; }
+.card-hint { font-size: 12px; color: var(--muted); margin-top: 12px; }
+.card-answer { font-size: 15px; line-height: 1.7; color: var(--green); flex: 1; }
+.card-explain {
+  font-size: 13px; color: var(--muted); line-height: 1.6;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+}
+.card-mnemonic {
+  font-size: 13px; color: var(--blue); font-weight: 500; line-height: 1.6;
+  margin-top: 8px; padding: 10px 14px; background: var(--blue-l); border-radius: 10px;
+}
+
+.controls {
+  display: flex; justify-content: center; align-items: center; gap: 12px; padding: 0 16px 8px;
+}
+.btn {
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--card); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; transition: all 0.2s; color: var(--text);
+}
+.btn:active { background: var(--border); transform: scale(0.95); }
+.btn.active { background: var(--green-l); border-color: var(--green); color: var(--green); }
+.btn.hard { background: var(--red-l); border-color: var(--red); color: var(--red); }
+.progress {
+  font-size: 13px; color: var(--muted); min-width: 64px;
+  text-align: center; font-weight: 500;
+}
+
+.swipe-hint { text-align: center; font-size: 11px; color: var(--muted); padding: 0 16px 16px; }
+.back-link { text-align: center; padding: 0 16px 20px; }
+.back-link a { font-size: 13px; color: var(--muted); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>细菌·真菌·病毒  三兄弟</h1>
+  <p>永远不混的终极手卡</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-cat="all">全部<span class="count"></span></div>
+  <div class="tab" data-cat="bacteria">细菌<span class="count"></span></div>
+  <div class="tab" data-cat="fungi">真菌<span class="count"></span></div>
+  <div class="tab" data-cat="virus">病毒<span class="count"></span></div>
+  <div class="tab" data-cat="compare">综合对比<span class="count"></span></div>
+  <div class="tab" data-cat="trap">易错陷阱<span class="count"></span></div>
+</div>
+
+<div class="stats" id="stats">
+  <span>已掌握 <strong id="known-count">0</strong>/<span id="total-count">0</span></span>
+  <span>待复习 <strong id="unknown-count">0</strong></span>
+</div>
+
+<div class="swipe-hint">点击卡片翻转 | 左右按钮翻页 | 键盘空格/箭头</div>
+
+<div class="card-area">
+  <div class="card-wrapper">
+    <div class="card" id="card" onclick="flipCard()">
+      <div class="card-front" id="card-front"></div>
+      <div class="card-back" id="card-back"></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="markCard('hard')" title="还不熟">😕</button>
+  <button class="btn" onclick="prevCard()">◀</button>
+  <span class="progress" id="progress">1/1</span>
+  <button class="btn" onclick="nextCard()">▶</button>
+  <button class="btn" onclick="markCard('easy')" title="已掌握">😊</button>
+  <button class="btn shuffle-btn" onclick="shuffle()" title="随机洗牌">🔀</button>
+</div>
+
+<div class="back-link"><a href="../index.html">返回首页</a></div>
+
+<script>
+const allCards = [
+  // ===== 细菌 =====
+  {
+    id: 1, cat: 'bacteria',
+    q: '细菌的比喻是什么？',
+    a: '毛坯房 —— 有墙有顶，但没有独立房间',
+    explain: '细菌有细胞壁、细胞膜、细胞质，但DNA散在细胞质中，没有核膜包裹 → 所以叫"无成形细胞核"。',
+    mnemonic: '毛坯房 = 有壳没核'
+  },
+  {
+    id: 2, cat: 'bacteria',
+    q: '细菌有没有成形的细胞核？',
+    a: '没有。细菌是原核生物。',
+    explain: '细菌的遗传物质（DNA）集中在一个区域但没有核膜包裹，这个区域叫"拟核"。没有核膜 = 没有成形的细胞核。',
+    mnemonic: '原核 = 核不完整 = 没核膜'
+  },
+  {
+    id: 3, cat: 'bacteria',
+    q: '细菌怎么繁殖？',
+    a: '分裂生殖（一个变两个，两个变四个）',
+    explain: '细菌繁殖速度极快，条件适宜时每20-30分钟分裂一次。这就是为什么食物放久了会坏——细菌指数级增长。',
+    mnemonic: '细菌靠裂变，一分为二'
+  },
+  {
+    id: 4, cat: 'bacteria',
+    q: '细菌的营养方式是什么？举两个例子。',
+    a: '大多数异养，少数自养。异养例子：乳酸菌（发酵酸奶）、大肠杆菌。自养例子：蓝细菌（有叶绿素）。',
+    explain: '异养 = 吃现成的有机物；自养 = 自己能合成有机物。',
+    mnemonic: '细菌多数靠"吃"，少数会"做饭"'
+  },
+
+  // ===== 真菌 =====
+  {
+    id: 5, cat: 'fungi',
+    q: '真菌的比喻是什么？',
+    a: '精装房 —— 有墙有顶，里面隔成了独立的房间',
+    explain: '真菌有真正的细胞核（核膜包裹），还有线粒体、液泡等各种细胞器。"真核"的意思就是"真正的、完整的核"。',
+    mnemonic: '精装房 = 有壳有核'
+  },
+  {
+    id: 6, cat: 'fungi',
+    q: '酵母菌属于细菌还是真菌？',
+    a: '真菌！它的名字里有"菌"字，但它不是细菌。',
+    explain: '酵母菌有成形细胞核，是真菌。这是考试最喜欢挖的陷阱：名字带"菌"的不一定是细菌。',
+    mnemonic: '酵母·菌 = 真菌！名字骗了你'
+  },
+  {
+    id: 7, cat: 'fungi',
+    q: '真菌怎么繁殖？',
+    a: '孢子生殖',
+    explain: '蘑菇的"伞盖"下面会散出无数孢子，像植物撒种子一样。霉菌也是靠孢子。',
+    mnemonic: '真菌撒孢子，像撒种子一样'
+  },
+  {
+    id: 8, cat: 'fungi',
+    q: '举出三个真菌的例子',
+    a: '酵母菌（做面包）、霉菌（发霉）、蘑菇（食用菌）',
+    explain: '酵母菌=单细胞真菌（做面包、酿酒）；霉菌=多细胞真菌（橘子上的绿毛）；蘑菇=大型真菌（吃的香菇、金针菇）。',
+    mnemonic: '酵母做面包、霉菌长绿毛、蘑菇是吃的'
+  },
+
+  // ===== 病毒 =====
+  {
+    id: 9, cat: 'virus',
+    q: '病毒的比喻是什么？',
+    a: '快递包裹 —— 连房子都没有，只有一个"包裹"',
+    explain: '病毒没有细胞结构，只有蛋白质外壳 + 内部遗传物质。它不能独立生活，必须"寄"在别人的细胞里才能繁殖。',
+    mnemonic: '快递包裹 = 没壳没核，必须寄生'
+  },
+  {
+    id: 10, cat: 'virus',
+    q: '病毒的基本结构是什么？',
+    a: '蛋白质外壳 + 内部的遗传物质（DNA或RNA）',
+    explain: '最简单的病毒就这两样东西，连细胞器都没有，所以不被认为是"生物"（在生物和非生物的边界上）。',
+    mnemonic: '病毒 = 壳包核，极简主义'
+  },
+  {
+    id: 11, cat: 'virus',
+    q: '病毒怎么"繁殖"？',
+    a: '侵入活细胞，利用宿主细胞的物质和能量来复制自己的遗传物质和蛋白质，再组装成新病毒。',
+    explain: '病毒自己没有"生产设备"，得借用宿主细胞的生产线。这就是为什么抗生素对病毒无效 — 抗生素杀的是细菌的结构，病毒根本没结构可杀。',
+    mnemonic: '病毒抢别人的工厂来生产自己'
+  },
+  {
+    id: 12, cat: 'virus',
+    q: '为什么感冒（病毒引起）吃抗生素没用？',
+    a: '抗生素杀菌是靠破坏细菌的细胞壁或代谢过程，病毒没有细胞结构，抗生素对它无效。',
+    explain: '这是考试和生活都会考的点！感冒分病毒性和细菌性，只有细菌感染才用抗生素。',
+    mnemonic: '抗生素 = 杀细菌的，不杀病毒'
+  },
+
+  // ===== 综合对比 =====
+  {
+    id: 13, cat: 'compare',
+    q: '细菌和真菌最本质的区别是什么？',
+    a: '细菌无成形细胞核（原核），真菌有成形的细胞核（真核）',
+    explain: '有没有"核膜"是判断标准。细菌的DNA没有核膜包裹，真菌的DNA有核膜包裹成细胞核。',
+    mnemonic: '看核膜：细菌没有，真菌有'
+  },
+  {
+    id: 14, cat: 'compare',
+    q: '病毒和细菌/真菌最本质的区别是什么？',
+    a: '病毒没有细胞结构，细菌和真菌都有细胞结构',
+    explain: '这是"结构之有无"的区别。细菌和真菌再简陋也有个"家"，病毒连家都没有。',
+    mnemonic: '有无细胞结构，一刀切'
+  },
+  {
+    id: 15, cat: 'compare',
+    q: '三种微生物的繁殖方式各是什么？',
+    a: '细菌=分裂生殖，真菌=孢子生殖，病毒=利用宿主细胞复制',
+    explain: '一个靠裂、一个靠撒、一个靠抢。',
+    mnemonic: '细菌裂、真菌撒、病毒抢'
+  },
+  {
+    id: 16, cat: 'compare',
+    q: '以"细胞核"为线索，一句话总结三者区别。',
+    a: '细菌无成形细胞核，真菌有成形的细胞核，病毒根本没有细胞（所以谈不上核）',
+    explain: '这条线串起来，三者关系一清二楚。',
+    mnemonic: '核的有无和完不完整'
+  },
+
+  // ===== 易错陷阱 =====
+  {
+    id: 17, cat: 'trap',
+    q: '判断题："细菌和真菌都是真核生物。"',
+    a: '❌ 错误。真菌是真核，细菌是原核。',
+    explain: '原核=核不完整（没核膜），真核=核完整（有核膜）。细菌是原核生物。',
+    mnemonic: '细菌"原"来不完整'
+  },
+  {
+    id: 18, cat: 'trap',
+    q: '判断题："乳酸菌和酵母菌都属于细菌。"',
+    a: '❌ 错误。乳酸菌是细菌，酵母菌是真菌。',
+    explain: '乳酸菌做酸奶=细菌；酵母菌做面包=真菌。两个都带"菌"字，但分属两界。',
+    mnemonic: '乳酸=细菌，酵母=真菌；做酸奶vs做面包'
+  },
+  {
+    id: 19, cat: 'trap',
+    q: '判断题："蘑菇是一种植物。"',
+    a: '❌ 错误。蘑菇是真菌，不是植物。',
+    explain: '蘑菇不能光合作用，靠分解有机物获取营养（腐生），所以归入真菌界而不是植物界。',
+    mnemonic: '没有叶绿体=不是植物=是真菌'
+  },
+  {
+    id: 20, cat: 'trap',
+    q: '判断题："病毒可以在营养琼脂培养基上生长。"',
+    a: '❌ 错误。病毒必须寄生在活细胞内才能繁殖，不能在无生命的培养基上生长。',
+    explain: '实验室培养病毒必须用活细胞（如鸡胚、细胞培养），不像细菌可以种在琼脂平板上。',
+    mnemonic: '病毒挑食：只吃活的，不要培养基'
+  },
+];
+
+let cards = [...allCards];
+let currentIndex = 0;
+let flipped = false;
+let knownCards = new Set();
+
+function getCatClass(cat) {
+  const m = { bacteria: 'cat-bacteria', fungi: 'cat-fungi', virus: 'cat-virus', compare: 'cat-compare', trap: 'cat-trap' };
+  return m[cat] || '';
+}
+
+function renderCard() {
+  if (cards.length === 0) { document.getElementById('card').style.display='none'; return; }
+  document.getElementById('card').style.display='';
+  const c = cards[currentIndex];
+  const catName = { bacteria: '细菌', fungi: '真菌', virus: '病毒', compare: '综合对比', trap: '易错陷阱' }[c.cat];
+
+  document.getElementById('card-front').innerHTML =
+    `<div class="card-num">${currentIndex + 1} / ${cards.length}</div>
+     <div class="card-category ${getCatClass(c.cat)}">${catName}</div>
+     <div class="card-question">${c.q}</div>
+     <div class="card-hint">点击翻转查看答案</div>`;
+
+  document.getElementById('card-back').innerHTML =
+    `<div class="card-num">${currentIndex + 1} / ${cards.length} · 背面</div>
+     <div class="card-category ${getCatClass(c.cat)}">${catName}</div>
+     <div class="card-answer">${c.a}</div>
+     <div class="card-explain">${c.explain || ''}</div>
+     ${c.mnemonic ? `<div class="card-mnemonic">🧠 ${c.mnemonic}</div>` : ''}`;
+
+  document.getElementById('card').classList.remove('flipped');
+  flipped = false;
+  updateProgress();
+  updateStats();
+}
+
+function flipCard() {
+  flipped = !flipped;
+  document.getElementById('card').classList.toggle('flipped', flipped);
+}
+
+function nextCard() { currentIndex = (currentIndex + 1) % cards.length; renderCard(); }
+function prevCard() { currentIndex = (currentIndex - 1 + cards.length) % cards.length; renderCard(); }
+
+function shuffle() {
+  for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
+  currentIndex = 0; renderCard();
+}
+
+function markCard(type) {
+  if (cards.length === 0) return;
+  const c = cards[currentIndex];
+  if (type === 'easy') {
+    knownCards.has(c.id) ? knownCards.delete(c.id) : knownCards.add(c.id);
+  }
+  updateStats();
+  nextCard();
+}
+
+function filterCards(cat) {
+  cards = cat === 'all' ? [...allCards] : allCards.filter(c => c.cat === cat);
+  currentIndex = 0; knownCards.clear(); renderCard(); updateTabBadges();
+}
+
+function updateProgress() { document.getElementById('progress').textContent = `${currentIndex + 1}/${cards.length}`; }
+
+function updateStats() {
+  document.getElementById('total-count').textContent = cards.length;
+  document.getElementById('known-count').textContent = knownCards.size;
+  document.getElementById('unknown-count').textContent = cards.length - knownCards.size;
+}
+
+function updateTabBadges() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    const cat = tab.dataset.cat;
+    tab.querySelector('.count').textContent = '(' + (cat === 'all' ? allCards.length : allCards.filter(c => c.cat === cat).length) + ')';
+  });
+}
+
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  filterCards(tab.dataset.cat);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') prevCard();
+  if (e.key === 'ArrowRight') nextCard();
+  if (e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); flipCard(); }
+});
+
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(diff) > 60) { diff > 0 ? prevCard() : nextCard(); }
+});
+
+filterCards('all');
+updateTabBadges();
+</script>
+</body>
+</html>

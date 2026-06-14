@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>花的结构与种子发育 · 口袋手卡</title>
+<style>
+:root {
+  --bg: #faf9f6;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --muted: #888;
+  --border: #e5e2dc;
+  --accent: #d85a30;
+  --accent-light: #f5c4b3;
+  --green: #1d9e75;
+  --green-light: #e1f5ee;
+  --blue: #378add;
+  --blue-light: #e6f1fb;
+  --purple: #7f77dd;
+  --purple-light: #eeedfe;
+  --amber: #ba7517;
+  --amber-light: #faeeda;
+  --pink: #d4537e;
+  --pink-light: #fbeaf0;
+  --radius: 16px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 28px 20px 8px;
+}
+.header h1 { font-size: 20px; font-weight: 600; }
+.header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.tab .count { font-size: 10px; opacity: 0.7; margin-left: 2px; }
+
+/* Stats */
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 8px 16px 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.stats span strong { color: var(--text); }
+
+/* Card container */
+.card-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px 40px;
+}
+.card-wrapper {
+  width: 100%;
+  max-width: 420px;
+  perspective: 1000px;
+  margin-bottom: 16px;
+}
+.card {
+  position: relative;
+  width: 100%;
+  min-height: 320px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 28px 24px;
+}
+.card.flipped { transform: rotateY(180deg); }
+
+.card-front, .card-back {
+  position: absolute;
+  inset: 0;
+  padding: 28px 24px;
+  backface-visibility: hidden;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+}
+.card-back { transform: rotateY(180deg); background: var(--card); }
+
+.card-num {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.card-category {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+.cat-structure { background: var(--purple-light); color: var(--purple); }
+.cat-dev { background: var(--green-light); color: var(--green); }
+.cat-detail { background: var(--blue-light); color: var(--blue); }
+.cat-exam { background: var(--amber-light); color: var(--amber); }
+
+.card-question {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.6;
+  flex: 1;
+}
+.card-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+.card-answer {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--green);
+  flex: 1;
+}
+.card-explain {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.card-mnemonic {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+  line-height: 1.6;
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: #fef8f4;
+  border-radius: 10px;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px 8px;
+}
+.btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s;
+  color: var(--text);
+}
+.btn:active { background: var(--border); transform: scale(0.95); }
+.btn.active { background: var(--green-light); border-color: var(--green); color: var(--green); }
+.btn.easy { background: var(--green-light); border-color: var(--green); color: var(--green); }
+.btn.hard { background: #fcebeb; border-color: #e24b4a; color: #e24b4a; }
+.progress {
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 64px;
+  text-align: center;
+  font-weight: 500;
+}
+.shuffle-btn {
+  font-size: 22px;
+}
+
+/* Swipe hint */
+.swipe-hint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0 16px 16px;
+}
+
+/* Back link */
+.back-link { text-align: center; padding: 0 16px 20px; }
+.back-link a { font-size: 13px; color: var(--muted); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>花的结构与种子发育</h1>
+  <p>点击卡片翻转查看答案</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-cat="all">全部<span class="count"></span></div>
+  <div class="tab" data-cat="structure">花的结构<span class="count"></span></div>
+  <div class="tab" data-cat="dev">发育对应<span class="count"></span></div>
+  <div class="tab" data-cat="detail">种子内部<span class="count"></span></div>
+  <div class="tab" data-cat="exam">易错辨析<span class="count"></span></div>
+</div>
+
+<div class="stats" id="stats">
+  <span>已掌握 <strong id="known-count">0</strong>/<span id="total-count">0</span></span>
+  <span>待复习 <strong id="unknown-count">0</strong></span>
+</div>
+
+<div class="swipe-hint">👆 点击卡片翻转 | 👈 👉 按钮翻页</div>
+
+<div class="card-area">
+  <div class="card-wrapper">
+    <div class="card" id="card" onclick="flipCard()">
+      <div class="card-front" id="card-front"></div>
+      <div class="card-back" id="card-back"></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="markCard('hard')" title="还不熟">😕</button>
+  <button class="btn" onclick="prevCard()">◀</button>
+  <span class="progress" id="progress">1/1</span>
+  <button class="btn" onclick="nextCard()">▶</button>
+  <button class="btn" onclick="markCard('easy')" title="已掌握">😊</button>
+  <button class="btn shuffle-btn" onclick="shuffle()" title="随机洗牌">🔀</button>
+</div>
+
+<div class="back-link"><a href="../index.html">返回首页</a></div>
+
+<script>
+const allCards = [
+  // ===== 花的结构 =====
+  {
+    id: 1, cat: 'structure',
+    q: '一朵完全花由哪六部分组成？',
+    a: '花柄、花托、花萼、花冠、雄蕊、雌蕊',
+    explain: '从下往上：花柄连接茎→花托支撑→花萼保护花蕾→花瓣吸引传粉→雄蕊产花粉→雌蕊接受花粉。记住顺序：柄托萼冠蕊蕊。',
+    mnemonic: '柄托萼冠，雌雄相随'
+  },
+  {
+    id: 2, cat: 'structure',
+    q: '雄蕊由哪两部分组成？',
+    a: '花药 + 花丝',
+    explain: '花药（顶部膨大部分）产生花粉，花丝支撑花药。',
+    mnemonic: '药在上产粉，丝在下支撑'
+  },
+  {
+    id: 3, cat: 'structure',
+    q: '雌蕊由哪三部分组成？',
+    a: '柱头 + 花柱 + 子房',
+    explain: '柱头（顶端）接受花粉，花柱连接柱头和子房，子房内含胚珠。',
+    mnemonic: '头接收，柱连接，房孕育'
+  },
+  {
+    id: 4, cat: 'structure',
+    q: '子房内部最重要的结构是什么？它将来发育成什么？',
+    a: '胚珠，将来发育成种子',
+    explain: '子房像一间房子，胚珠是房里的珠子。一朵花可以有多个胚珠，每个胚珠都能发育成一粒种子。',
+    mnemonic: '房里的珠子 = 未来的种子'
+  },
+  {
+    id: 5, cat: 'structure',
+    q: '花最重要的两部分是什么？为什么？',
+    a: '雄蕊和雌蕊（合称花蕊），因为与果实和种子的形成直接相关',
+    explain: '花瓣、花萼即使掉落也不影响结果，但去掉雄蕊或雌蕊就不能结种子了。',
+    mnemonic: '花瓣好看不重要，花蕊才是生产力'
+  },
+
+  // ===== 发育对应关系 =====
+  {
+    id: 6, cat: 'dev',
+    q: '子房发育成果实的什么部分？',
+    a: '整个子房发育成整个果实',
+    explain: '我们吃的苹果、桃子，整个"果实"就是由子房发育来的。',
+    mnemonic: '子房 = 未来的果实'
+  },
+  {
+    id: 7, cat: 'dev',
+    q: '子房壁发育成果实的什么部分？',
+    a: '果皮',
+    explain: '果皮不只是一层皮！桃子的果肉（中果皮）也是子房壁发育来的。我们吃的桃子果肉 = 果皮。',
+    mnemonic: '墙壁变果皮，果肉也是它'
+  },
+  {
+    id: 8, cat: 'dev',
+    q: '胚珠发育成什么？',
+    a: '种子',
+    explain: '胚珠是种子"前世"，经过传粉受精后变成种子。一个子房里有几个胚珠，将来果实里就有几粒种子。',
+    mnemonic: '珠子变种子，数量对应'
+  },
+  {
+    id: 9, cat: 'dev',
+    q: '珠被发育成种子的什么部分？',
+    a: '种皮',
+    explain: '花生仁外面的红皮就是种皮，由珠被发育而来。珠被 = 胚珠的外层保护膜 → 变成种子的保护皮。',
+    mnemonic: '珠子外衣（珠被）= 种子外皮（种皮）'
+  },
+  {
+    id: 10, cat: 'dev',
+    q: '受精卵发育成种子的什么部分？',
+    a: '胚',
+    explain: '胚是种子最重要的部分——包含胚芽、胚轴、胚根、子叶，将来发育成一棵全新的植物。受精卵是胚的"前身"。',
+    mnemonic: '卵变胚 — 生命的核心'
+  },
+  {
+    id: 11, cat: 'dev',
+    q: '受精极核发育成种子的什么部分？',
+    a: '胚乳',
+    explain: '精子+两个极核融合=受精极核→发育成胚乳。胚乳为胚萌发提供营养（如玉米的胚乳含大量淀粉）。',
+    mnemonic: '极核双胞胎 → 变成营养库胚乳'
+  },
+
+  // ===== 种子内部结构 =====
+  {
+    id: 12, cat: 'detail',
+    q: '种子由哪三部分组成？',
+    a: '种皮 + 胚 + 胚乳',
+    explain: '种皮保护、胚是新植物的幼体、胚乳储存营养。有些种子（如花生）胚乳在发育过程中被子叶吸收，成为无胚乳种子。',
+    mnemonic: '皮包胚，乳养胚'
+  },
+  {
+    id: 13, cat: 'detail',
+    q: '胚由哪四部分组成？',
+    a: '胚芽 + 胚轴 + 胚根 + 子叶',
+    explain: '胚芽→茎和叶；胚根→根；胚轴→连接胚芽和胚根；子叶→储存/转运营养。双子叶植物子叶两片（如花生），单子叶植物子叶一片（如玉米）。',
+    mnemonic: '芽长茎叶，根长根，轴当桥梁，叶当粮仓'
+  },
+  {
+    id: 14, cat: 'detail',
+    q: '种子萌发时，各部分发育成什么？',
+    a: '胚芽→茎和叶，胚根→根，胚轴→连接根和茎的部分',
+    explain: '种子萌发时首先突破种皮的是胚根（向下长成根），然后是胚芽向上长成茎叶。',
+    mnemonic: '根先出，芽后上'
+  },
+  {
+    id: 15, cat: 'detail',
+    q: '有胚乳种子和无胚乳种子的区别？各举一例',
+    a: '有胚乳：胚乳独立存在（如玉米、水稻、小麦）；无胚乳：胚乳被子叶吸收（如花生、大豆、菜豆）',
+    explain: '关键看营养储存在哪——储存在胚乳中 vs 储存在子叶中。单子叶植物多数有胚乳，双子叶植物多数无胚乳。',
+    mnemonic: '单子有乳，双子无乳（多数）'
+  },
+
+  // ===== 易错辨析 =====
+  {
+    id: 16, cat: 'exam',
+    q: '判断题：我们吃的桃子果肉是果皮的一部分。',
+    a: '✅ 正确',
+    explain: '桃子的外果皮就是那层薄皮，中果皮是果肉（吃的部分），内果皮是坚硬的桃核。三层都叫"果皮"，都由子房壁发育而来。',
+    mnemonic: '三层果皮：外薄皮+中果肉+内核皮'
+  },
+  {
+    id: 17, cat: 'exam',
+    q: '判断题：花生仁的红皮是果皮。',
+    a: '❌ 错误，那是种皮',
+    explain: '花生壳才是果皮（子房壁变来的），花生仁外面的红皮是种皮（珠被变来的）。一层果皮+一层种皮=两层保护。',
+    mnemonic: '花生壳=果皮，红皮=种皮'
+  },
+  {
+    id: 18, cat: 'exam',
+    q: '判断题：一个西瓜有很多籽，说明子房里有很多胚珠。',
+    a: '✅ 正确',
+    explain: '每个胚珠发育成一颗种子（一粒籽）。西瓜籽多，说明它有很多胚珠。这是常见的推理题。',
+    mnemonic: '籽多 = 胚珠多 = 种子多'
+  },
+  {
+    id: 19, cat: 'exam',
+    q: '判断题：花的所有部分都会发育成果实的一部分。',
+    a: '❌ 错误',
+    explain: '花瓣、花萼、雄蕊、花柱、柱头在传粉受精后通常都会凋落。只有子房发育成果实，胚珠发育成种子。',
+    mnemonic: '花开完就下班，只有子房继续干'
+  },
+  {
+    id: 20, cat: 'exam',
+    q: '开花之后如果没有传粉受精，会发生什么？',
+    a: '花会凋落，不会形成果实和种子',
+    explain: '传粉受精是果实和种子形成的前提条件。没有它，胚珠不能发育，子房也会脱落。这就是为什么阴雨天会影响果树产量。',
+    mnemonic: '无传粉，无果实'
+  },
+];
+
+let cards = [...allCards];
+let currentIndex = 0;
+let flipped = false;
+let knownCards = new Set();
+
+function getCatClass(cat) {
+  const m = { structure: 'cat-structure', dev: 'cat-dev', detail: 'cat-detail', exam: 'cat-exam' };
+  return m[cat] || '';
+}
+
+function renderCard() {
+  if (cards.length === 0) { document.getElementById('card').style.display='none'; return; }
+  document.getElementById('card').style.display='';
+  const c = cards[currentIndex];
+  const catName = { structure: '花的结构', dev: '发育对应', detail: '种子内部', exam: '易错辨析' }[c.cat];
+
+  document.getElementById('card-front').innerHTML = `
+    <div class="card-num">${currentIndex + 1} / ${cards.length}</div>
+    <div class="card-category ${getCatClass(c.cat)}">${catName}</div>
+    <div class="card-question">${c.q}</div>
+    <div class="card-hint">点击翻转查看答案</div>
+  `;
+
+  document.getElementById('card-back').innerHTML = `
+    <div class="card-num">${currentIndex + 1} / ${cards.length} · 背面</div>
+    <div class="card-category ${getCatClass(c.cat)}">${catName}</div>
+    <div class="card-answer">${c.a}</div>
+    <div class="card-explain">${c.explain || ''}</div>
+    ${c.mnemonic ? `<div class="card-mnemonic">🧠 ${c.mnemonic}</div>` : ''}
+  `;
+
+  document.getElementById('card').classList.remove('flipped');
+  flipped = false;
+  updateProgress();
+}
+
+function flipCard() {
+  flipped = !flipped;
+  document.getElementById('card').classList.toggle('flipped', flipped);
+}
+
+function nextCard() {
+  currentIndex = (currentIndex + 1) % cards.length;
+  renderCard();
+}
+
+function prevCard() {
+  currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+  renderCard();
+}
+
+function shuffle() {
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  currentIndex = 0;
+  renderCard();
+}
+
+function markCard(type) {
+  if (cards.length === 0) return;
+  const c = cards[currentIndex];
+  if (type === 'easy') {
+    if (knownCards.has(c.id)) {
+      knownCards.delete(c.id);
+    } else {
+      knownCards.add(c.id);
+    }
+  }
+  updateStats();
+  document.querySelector('.btn.easy').classList.toggle('active', knownCards.has(c.id));
+  nextCard();
+}
+
+function filterCards(cat) {
+  if (cat === 'all') {
+    cards = [...allCards];
+  } else {
+    cards = allCards.filter(c => c.cat === cat);
+  }
+  currentIndex = 0;
+  knownCards.clear();
+  renderCard();
+  updateTabBadges();
+  updateStats();
+}
+
+function updateProgress() {
+  document.getElementById('progress').textContent = `${currentIndex + 1}/${cards.length}`;
+}
+
+function updateStats() {
+  document.getElementById('total-count').textContent = cards.length;
+  document.getElementById('known-count').textContent = knownCards.size;
+  document.getElementById('unknown-count').textContent = cards.length - knownCards.size;
+}
+
+function updateTabBadges() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    const cat = tab.dataset.cat;
+    const count = cat === 'all' ? allCards.length : allCards.filter(c => c.cat === cat).length;
+    tab.querySelector('.count').textContent = `(${count})`;
+  });
+}
+
+// Tab clicks
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  filterCards(tab.dataset.cat);
+});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') prevCard();
+  if (e.key === 'ArrowRight') nextCard();
+  if (e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); flipCard(); }
+});
+
+// Touch swipe
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(diff) > 60) { diff > 0 ? prevCard() : nextCard(); }
+});
+
+// Init
+filterCards('all');
+updateTabBadges();
+</script>
+</body>
+</html>
